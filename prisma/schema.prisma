@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Seller {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  avatarUrl    String?
+  passwordHash String
+  rooms        Room[]
+  communityRooms CommunityRoom[]
+  createdAt    DateTime @default(now())
+}
+
+model Room {
+  id           String   @id @default(cuid())
+  sellerId     String
+  seller       Seller   @relation(fields: [sellerId], references: [id])
+  name         String
+  customerName String
+  description  String?
+  slug         String   @unique
+  status       String   @default("draft") // draft, published, archived
+  branding     String   @default("{}") // JSON: { sellerLogoUrl?, customerLogoUrl?, primaryColor?, companyName? }
+  sections     Section[]
+  viewEvents   ViewEvent[]
+  communityRoom CommunityRoom?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Section {
+  id          String  @id @default(cuid())
+  roomId      String
+  room        Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  title       String
+  order       Int
+  audienceTag String?
+  assets      Asset[]
+}
+
+model Asset {
+  id          String  @id @default(cuid())
+  sectionId   String
+  section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  type        String  // file, link, richtext
+  sourceType  String  @default("manual")
+  sourceRef   String?
+  title       String
+  description String?
+  url         String?
+  fileKey     String?
+  metadata    String  @default("{}") // JSON string
+  order       Int
+  viewEvents  ViewEvent[]
+}
+
+model ViewEvent {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  assetId   String?
+  asset     Asset?   @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  visitorId String
+  action    String   // room_viewed, asset_viewed, asset_downloaded, link_clicked
+  timestamp DateTime @default(now())
+  ipHash    String?
+  userAgent String?
+}
+
+model CommunityRoom {
+  id          String   @id @default(cuid())
+  roomId      String   @unique
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sellerId    String
+  seller      Seller   @relation(fields: [sellerId], references: [id])
+  title       String
+  description String
+  tags        String   @default("[]") // JSON array
+  cloneCount  Int      @default(0)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
