@@ -2,7 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 
-type Tab = "file" | "link" | "note" | "twilio" | "demo";
+type Tab = "file" | "resource" | "note" | "demo";
+type ResourceSource = "url" | "twilio-docs";
 
 interface AssetPickerProps {
   roomId: string;
@@ -10,6 +11,8 @@ interface AssetPickerProps {
   onClose: () => void;
   onSaved: () => void;
 }
+
+type DocsResult = { title: string; url: string; category: string; description: string };
 
 export function AssetPicker({
   roomId,
@@ -28,14 +31,23 @@ export function AssetPicker({
   const [fileDescription, setFileDescription] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Link tab state
-  const [linkUrl, setLinkUrl] = useState("");
-  const [linkTitle, setLinkTitle] = useState("");
-  const [linkDescription, setLinkDescription] = useState("");
-
   // Note tab state
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
+
+  // Resource tab state
+  const [resourceSource, setResourceSource] = useState<ResourceSource>("url");
+  const [resourceUrl, setResourceUrl] = useState("");
+  const [resourceTitle, setResourceTitle] = useState("");
+  const [resourceDescription, setResourceDescription] = useState("");
+
+  // Twilio docs search state
+  const [docsQuery, setDocsQuery] = useState("");
+  const [docsResults, setDocsResults] = useState<DocsResult[]>([]);
+  const [docsSelected, setDocsSelected] = useState<DocsResult | null>(null);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState<string | null>(null);
+  const docsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -46,6 +58,29 @@ export function AssetPicker({
       if (!fileTitle) setFileTitle(dropped.name.replace(/\.[^.]+$/, ""));
     }
   }, [fileTitle]);
+
+  const handleDocsSearch = useCallback((q: string) => {
+    setDocsQuery(q);
+    setDocsError(null);
+    if (docsDebounceRef.current) clearTimeout(docsDebounceRef.current);
+    if (!q.trim()) {
+      setDocsResults([]);
+      return;
+    }
+    docsDebounceRef.current = setTimeout(async () => {
+      setDocsLoading(true);
+      try {
+        const res = await fetch(`/api/docs/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error("Search unavailable");
+        setDocsResults(await res.json());
+      } catch {
+        setDocsError("Search unavailable — try again");
+        setDocsResults([]);
+      } finally {
+        setDocsLoading(false);
+      }
+    }, 300);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,18 +97,28 @@ export function AssetPicker({
         fd.append("title", fileTitle.trim());
         fd.append("description", fileDescription.trim());
         fd.append("file", file);
-      } else if (tab === "link") {
-        if (!linkUrl.trim()) throw new Error("Please enter a URL.");
-        if (!linkTitle.trim()) throw new Error("Please enter a title.");
-        fd.append("type", "link");
-        fd.append("title", linkTitle.trim());
-        fd.append("description", linkDescription.trim());
-        fd.append("url", linkUrl.trim());
       } else if (tab === "note") {
         if (!noteTitle.trim()) throw new Error("Please enter a title.");
         fd.append("type", "richtext");
         fd.append("title", noteTitle.trim());
         fd.append("content", noteContent.trim());
+      } else if (tab === "resource") {
+        if (resourceSource === "url") {
+          if (!resourceUrl.trim()) throw new Error("Please enter a URL.");
+          if (!resourceTitle.trim()) throw new Error("Please enter a title.");
+          fd.append("type", "link");
+          fd.append("sourceType", "manual");
+          fd.append("title", resourceTitle.trim());
+          fd.append("description", resourceDescription.trim());
+          fd.append("url", resourceUrl.trim());
+        } else {
+          if (!docsSelected) throw new Error("Please select a document.");
+          fd.append("type", "link");
+          fd.append("sourceType", "twilio-docs");
+          fd.append("title", docsSelected.title);
+          fd.append("description", docsSelected.description ?? "");
+          fd.append("url", docsSelected.url);
+        }
       }
 
       const res = await fetch(
@@ -96,19 +141,18 @@ export function AssetPicker({
 
   const tabs: { id: Tab; label: string; disabled?: boolean }[] = [
     { id: "file", label: "Upload File" },
-    { id: "link", label: "Add Link" },
+    { id: "resource", label: "Add Resource" },
     { id: "note", label: "Write Note" },
-    { id: "twilio", label: "Twilio Docs", disabled: true },
     { id: "demo", label: "Live Demo", disabled: true },
   ];
 
+  const showSave = tab !== "demo" &&
+    !(tab === "resource" && resourceSource === "twilio-docs" && !docsSelected);
+
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-900 shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -118,12 +162,7 @@ export function AssetPicker({
             onClick={onClose}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-800 hover:text-white transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-5 w-5"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
               <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
             </svg>
           </button>
@@ -138,12 +177,11 @@ export function AssetPicker({
               onClick={() => !t.disabled && setTab(t.id)}
               disabled={t.disabled}
               className={`relative shrink-0 px-3 py-2.5 text-sm font-medium transition
-                ${
-                  t.disabled
-                    ? "cursor-not-allowed text-gray-600"
-                    : tab === t.id
-                    ? "text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-500"
-                    : "text-gray-400 hover:text-gray-200"
+                ${t.disabled
+                  ? "cursor-not-allowed text-gray-600"
+                  : tab === t.id
+                  ? "text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-500"
+                  : "text-gray-400 hover:text-gray-200"
                 }`}
             >
               {t.label}
@@ -159,65 +197,39 @@ export function AssetPicker({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5">
           <form id="asset-form" onSubmit={handleSubmit}>
+
             {/* Upload File Tab */}
             {tab === "file" && (
               <div className="space-y-4">
-                {/* Drop Zone */}
                 <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 cursor-pointer transition
-                    ${
-                      dragOver
-                        ? "border-blue-500 bg-blue-500/10"
-                        : file
-                        ? "border-green-700 bg-green-900/20"
-                        : "border-gray-700 bg-gray-800/40 hover:border-gray-600 hover:bg-gray-800/60"
+                    ${dragOver
+                      ? "border-blue-500 bg-blue-500/10"
+                      : file
+                      ? "border-green-700 bg-green-900/20"
+                      : "border-gray-700 bg-gray-800/40 hover:border-gray-600 hover:bg-gray-800/60"
                     }`}
                 >
                   {file ? (
                     <>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-8 w-8 text-green-400 mb-2"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                          clipRule="evenodd"
-                        />
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-8 w-8 text-green-400 mb-2">
+                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                       </svg>
-                      <p className="text-sm font-medium text-green-400 text-center truncate max-w-xs">
-                        {file.name}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {(file.size / 1024).toFixed(0)} KB — click to replace
-                      </p>
+                      <p className="text-sm font-medium text-green-400 text-center truncate max-w-xs">{file.name}</p>
+                      <p className="mt-1 text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB — click to replace</p>
                     </>
                   ) : (
                     <>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-8 w-8 text-gray-500 mb-2"
-                      >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-8 w-8 text-gray-500 mb-2">
                         <path d="M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z" />
                         <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
                       </svg>
-                      <p className="text-sm font-medium text-gray-300">
-                        Drop a file or click to browse
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        PDF, PPTX, DOCX, images, videos, and more
-                      </p>
+                      <p className="text-sm font-medium text-gray-300">Drop a file or click to browse</p>
+                      <p className="mt-1 text-xs text-gray-500">PDF, PPTX, DOCX, images, videos, and more</p>
                     </>
                   )}
                 </div>
@@ -227,14 +239,9 @@ export function AssetPicker({
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) {
-                      setFile(f);
-                      if (!fileTitle)
-                        setFileTitle(f.name.replace(/\.[^.]+$/, ""));
-                    }
+                    if (f) { setFile(f); if (!fileTitle) setFileTitle(f.name.replace(/\.[^.]+$/, "")); }
                   }}
                 />
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Title <span className="text-red-400">*</span>
@@ -248,11 +255,9 @@ export function AssetPicker({
                     className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Description{" "}
-                    <span className="text-gray-500 font-normal">(optional)</span>
+                    Description <span className="text-gray-500 font-normal">(optional)</span>
                   </label>
                   <textarea
                     rows={2}
@@ -265,48 +270,131 @@ export function AssetPicker({
               </div>
             )}
 
-            {/* Add Link Tab */}
-            {tab === "link" && (
+            {/* Add Resource Tab */}
+            {tab === "resource" && (
               <div className="space-y-4">
+                {/* Source selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    URL <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="https://example.com"
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
-                  />
+                  <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2">Source</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["url", "twilio-docs"] as ResourceSource[]).map((src) => (
+                      <button
+                        key={src}
+                        type="button"
+                        onClick={() => { setResourceSource(src); setDocsSelected(null); }}
+                        className={`rounded-lg border px-4 py-3 text-left transition
+                          ${resourceSource === src
+                            ? "border-zinc-500 bg-zinc-800"
+                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-500"
+                          }`}
+                      >
+                        <p className="text-sm font-semibold text-zinc-100">
+                          {src === "url" ? "🔗 Any URL" : "📄 Twilio Docs"}
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-0.5">
+                          {src === "url" ? "Paste a link" : "Search library"}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Title <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={linkTitle}
-                    onChange={(e) => setLinkTitle(e.target.value)}
-                    placeholder="e.g. Pricing Page"
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Description{" "}
-                    <span className="text-gray-500 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={linkDescription}
-                    onChange={(e) => setLinkDescription(e.target.value)}
-                    placeholder="What will the customer find here?"
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition resize-none"
-                  />
-                </div>
+
+                {/* Any URL form */}
+                {resourceSource === "url" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        URL <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        value={resourceUrl}
+                        onChange={(e) => setResourceUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        Title <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={resourceTitle}
+                        onChange={(e) => setResourceTitle(e.target.value)}
+                        placeholder="e.g. Pricing Page"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        Description <span className="text-gray-500 font-normal">(optional)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={resourceDescription}
+                        onChange={(e) => setResourceDescription(e.target.value)}
+                        placeholder="What will the customer find here?"
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Twilio Docs search */}
+                {resourceSource === "twilio-docs" && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={docsQuery}
+                      onChange={(e) => handleDocsSearch(e.target.value)}
+                      placeholder="Search Twilio docs…"
+                      className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                    />
+
+                    {!docsQuery.trim() && (
+                      <p className="text-xs text-gray-500 px-1">Start typing to search…</p>
+                    )}
+                    {docsLoading && (
+                      <p className="text-xs text-gray-500 px-1">Searching…</p>
+                    )}
+                    {docsError && (
+                      <p className="text-xs text-red-400 px-1">{docsError}</p>
+                    )}
+                    {!docsLoading && !docsError && docsResults.length > 0 && (
+                      <div className="flex flex-col gap-0.5 max-h-52 overflow-y-auto rounded-lg border border-gray-700 bg-gray-800/40">
+                        {docsResults.map((r, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setDocsSelected(r)}
+                            className={`w-full text-left px-3 py-2.5 text-sm transition
+                              ${docsSelected?.url === r.url
+                                ? "bg-zinc-700 border-l-2 border-zinc-300"
+                                : "hover:bg-gray-700/60"
+                              }`}
+                          >
+                            <p className="font-medium text-white truncate">{r.title}</p>
+                            <p className="text-xs text-gray-500 truncate">{r.url.replace("https://www.twilio.com/docs", "/docs")}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {!docsLoading && !docsError && docsQuery.trim() && docsResults.length === 0 && (
+                      <p className="text-xs text-gray-500 px-1">No results found.</p>
+                    )}
+
+                    {docsSelected && (
+                      <div className="rounded-lg border border-zinc-600 bg-zinc-800/60 px-3 py-2.5">
+                        <p className="text-xs text-zinc-400 mb-0.5">Selected</p>
+                        <p className="text-sm font-medium text-white">{docsSelected.title}</p>
+                        <p className="text-xs text-zinc-500 truncate">{docsSelected.url.replace("https://www.twilio.com/docs", "/docs")}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -327,9 +415,7 @@ export function AssetPicker({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Content
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Content</label>
                   <textarea
                     rows={6}
                     value={noteContent}
@@ -341,27 +427,14 @@ export function AssetPicker({
               </div>
             )}
 
-            {/* Disabled tabs fallback */}
-            {(tab === "twilio" || tab === "demo") && (
+            {/* Live Demo — coming soon */}
+            {tab === "demo" && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 text-gray-700 mb-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-700 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <p className="text-base font-medium text-gray-500">Coming Soon</p>
-                <p className="mt-1 text-sm text-gray-600">
-                  This feature is under development.
-                </p>
+                <p className="mt-1 text-sm text-gray-600">This feature is under development.</p>
               </div>
             )}
           </form>
@@ -369,9 +442,7 @@ export function AssetPicker({
 
         {/* Footer */}
         <div className="border-t border-gray-800 px-5 py-4 shrink-0 flex items-center justify-between gap-3">
-          {error && (
-            <p className="text-sm text-red-400 flex-1 truncate">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-400 flex-1 truncate">{error}</p>}
           {!error && <div className="flex-1" />}
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -381,7 +452,7 @@ export function AssetPicker({
             >
               Cancel
             </button>
-            {tab !== "twilio" && tab !== "demo" && (
+            {showSave && (
               <button
                 type="submit"
                 form="asset-form"
@@ -390,31 +461,13 @@ export function AssetPicker({
               >
                 {saving ? (
                   <>
-                    <svg
-                      className="h-4 w-4 animate-spin"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
+                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     Saving…
                   </>
-                ) : (
-                  "Save Asset"
-                )}
+                ) : "Save Asset"}
               </button>
             )}
           </div>
