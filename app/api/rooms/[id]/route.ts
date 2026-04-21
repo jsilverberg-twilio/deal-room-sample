@@ -27,10 +27,11 @@ export async function PATCH(
 ) {
   const user = await getCurrentUser();
   const { id } = await params;
-  const data = await req.json();
+  const body = await req.json();
+  const { name, customerName, description, status } = body;
   const room = await prisma.room.updateMany({
     where: { id, sellerId: user.id },
-    data,
+    data: { name, customerName, description, status },
   });
   if (!room.count) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true });

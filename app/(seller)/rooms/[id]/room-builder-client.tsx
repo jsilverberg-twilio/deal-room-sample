@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { RoomProvider, useRoom, type Section } from "./context";
+import { getThumbGrad, getThumbLabel } from "@/lib/assets";
 import { SectionList } from "./components/SectionList";
 import { BrandingEditor } from "./components/BrandingEditor";
 import { PublishButton } from "./components/PublishButton";
@@ -72,25 +73,6 @@ function BuyerPreview({
   const companyLabel = branding.companyName || "Twilio";
   const activeSection: Section | null = sections[activeIdx] ?? null;
   const sellerInitials = seller.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-
-  function getThumbGrad(type: string, metadata: string) {
-    if (type === "link") return "from-blue-500 to-blue-700";
-    if (type === "richtext") return "from-purple-500 to-purple-700";
-    let p: { fileName?: string } = {};
-    try { p = JSON.parse(metadata ?? "{}"); } catch {}
-    const ext = p.fileName?.split(".").pop()?.toUpperCase() ?? "";
-    if (ext === "PDF") return "from-red-500 to-red-700";
-    if (["PPTX", "PPT"].includes(ext)) return "from-orange-500 to-orange-700";
-    return "from-slate-400 to-slate-600";
-  }
-
-  function getThumbLabel(type: string, metadata: string) {
-    if (type === "link") return "↗";
-    if (type === "richtext") return "NOTE";
-    let p: { fileName?: string } = {};
-    try { p = JSON.parse(metadata ?? "{}"); } catch {}
-    return p.fileName?.split(".").pop()?.toUpperCase()?.slice(0, 4) ?? "FILE";
-  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -390,9 +372,10 @@ function EditorPanel({
   analytics: Analytics;
 }) {
   const [tab, setTab] = useState<EditorTab>("content");
+  const [status, setStatus] = useState(roomStatus);
 
-  const statusLabel = roomStatus === "published" ? "Live" : "Draft";
-  const statusClass = roomStatus === "published"
+  const statusLabel = status === "published" ? "Live" : "Draft";
+  const statusClass = status === "published"
     ? "bg-green-100 text-green-700 border border-green-200"
     : "bg-yellow-100 text-yellow-700 border border-yellow-200";
 
@@ -410,7 +393,7 @@ function EditorPanel({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <ShareToCommunity roomId={roomId} roomName={roomName} />
-          <PublishButton roomId={roomId} status={roomStatus} shareUrl={shareUrl} />
+          <PublishButton roomId={roomId} status={status} onStatusChange={setStatus} shareUrl={shareUrl} />
         </div>
       </div>
 

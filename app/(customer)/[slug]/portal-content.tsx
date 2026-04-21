@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RoomTracker, AssetTrackerButton } from "./tracker";
+import { getThumbGrad, getThumbLabel, getMetaText } from "@/lib/assets";
 
 interface Asset {
   id: string;
@@ -42,17 +43,6 @@ interface PortalContentProps {
   branding: Branding;
 }
 
-function getThumbnail(type: string, metadata: string): { gradient: string; label: string } {
-  if (type === "link") return { gradient: "from-blue-500 to-blue-700", label: "↗" };
-  if (type === "richtext") return { gradient: "from-purple-500 to-purple-700", label: "NOTE" };
-  let parsed: { fileName?: string } = {};
-  try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-  const ext = parsed.fileName?.split(".").pop()?.toUpperCase() ?? "FILE";
-  if (ext === "PDF") return { gradient: "from-red-500 to-red-700", label: "PDF" };
-  if (["PPTX", "PPT"].includes(ext)) return { gradient: "from-orange-500 to-orange-700", label: ext };
-  return { gradient: "from-slate-500 to-slate-700", label: ext.slice(0, 4) };
-}
-
 function getBadgeColor(type: string, metadata: string): string {
   if (type === "link") return "bg-blue-100 text-blue-700 border border-blue-200";
   if (type === "richtext") return "bg-purple-100 text-purple-700 border border-purple-200";
@@ -72,22 +62,6 @@ function getBadgeLabel(type: string, metadata: string): string {
   return parsed.fileName?.split(".").pop()?.toUpperCase()?.slice(0, 5) ?? "FILE";
 }
 
-function getMetaText(type: string, metadata: string): string {
-  if (type === "link") {
-    let parsed: { url?: string } = {};
-    try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-    try { return new URL(parsed.url ?? "").hostname; } catch { return ""; }
-  }
-  let parsed: { fileName?: string; fileSize?: number } = {};
-  try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-  const parts: string[] = [];
-  if (parsed.fileSize) {
-    const mb = parsed.fileSize / (1024 * 1024);
-    parts.push(mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(parsed.fileSize / 1024)} KB`);
-  }
-  return parts.join(" · ");
-}
-
 export function PortalContent({
   roomId,
   roomName,
@@ -99,7 +73,6 @@ export function PortalContent({
 }: PortalContentProps) {
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const brandColor = branding.primaryColor ?? "#ef4444";
   const companyLabel = branding.companyName || "Twilio";
   const activeSection = sections[activeIdx] ?? null;
   const sellerFirstName = seller.name.split(" ")[0];
@@ -178,15 +151,16 @@ export function PortalContent({
           {/* Asset grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-10">
             {activeSection.assets.map((asset) => {
-              const { gradient, label } = getThumbnail(asset.type, asset.metadata);
+              const gradient = getThumbGrad(asset.type, asset.metadata);
+              const label = getThumbLabel(asset.type, asset.metadata);
               const badgeColor = getBadgeColor(asset.type, asset.metadata);
               const badgeLabel = getBadgeLabel(asset.type, asset.metadata);
-              const metaText = getMetaText(asset.type, asset.metadata);
+              const metaText = getMetaText(asset.type, asset.metadata ?? "{}");
               const isFile = asset.type === "file";
               const isLink = asset.type === "link";
               const hasAction = isFile || isLink;
               const actionLabel = isFile ? "⬇ Download" : "↗ Open Link";
-              const trackAction: "asset_viewed" | "link_clicked" = isLink ? "link_clicked" : "asset_viewed";
+              const trackAction: "asset_downloaded" | "link_clicked" = isLink ? "link_clicked" : "asset_downloaded";
 
               return (
                 <div
@@ -245,9 +219,12 @@ export function PortalContent({
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-500 shadow-sm hover:border-slate-300 transition-colors">
+              <a
+                href={`mailto:${seller.email}?subject=Let's connect — ${roomName}&body=Hi ${sellerFirstName},%0A%0AI'd love to schedule some time to discuss next steps.%0A%0AThanks`}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-500 shadow-sm hover:border-slate-300 transition-colors"
+              >
                 Schedule a call
-              </button>
+              </a>
               <a
                 href={`mailto:${seller.email}`}
                 className="px-3 py-2 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"

@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface PublishButtonProps {
   roomId: string;
   status: string;
   shareUrl: string;
+  onStatusChange: (status: string) => void;
 }
 
-export function PublishButton({ roomId, status, shareUrl }: PublishButtonProps) {
-  const router = useRouter();
+export function PublishButton({ roomId, status, shareUrl, onStatusChange }: PublishButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -24,8 +23,8 @@ export function PublishButton({ roomId, status, shareUrl }: PublishButtonProps) 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
+    onStatusChange(newStatus);
     setLoading(false);
-    router.refresh();
   }
 
   async function copyLink() {
@@ -52,7 +51,7 @@ export function PublishButton({ roomId, status, shareUrl }: PublishButtonProps) 
           disabled={loading}
           className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
         >
-          {loading ? "Updating…" : "Unpublish"}
+          {loading ? "Updating…" : "Make Draft"}
         </button>
       </div>
     );
@@ -64,7 +63,7 @@ export function PublishButton({ roomId, status, shareUrl }: PublishButtonProps) 
       disabled={loading}
       className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
     >
-      {loading ? "Publishing…" : "Publish Room"}
+      {loading ? "Publishing…" : "Go Live"}
     </button>
   );
 }

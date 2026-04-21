@@ -11,106 +11,44 @@ interface PageProps {
 function formatDate(date: Date | null): string {
   if (!date) return "Never";
   return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
   }).format(date);
 }
 
 function relativeTime(date: Date): string {
-  const now = Date.now();
-  const diff = now - date.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
+  const diff = Date.now() - date.getTime();
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ago`;
+  if (h > 0) return `${h}h ago`;
+  if (m > 0) return `${m}m ago`;
   return "just now";
-}
-
-function ActionIcon({ action }: { action: string }) {
-  if (action === "room_viewed") {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        className="h-4 w-4 text-blue-400"
-      >
-        <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-        <path
-          fillRule="evenodd"
-          d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41z"
-          clipRule="evenodd"
-        />
-      </svg>
-    );
-  }
-  if (action === "asset_downloaded") {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        className="h-4 w-4 text-green-400"
-      >
-        <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-        <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
-      </svg>
-    );
-  }
-  if (action === "link_clicked") {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        className="h-4 w-4 text-purple-400"
-      >
-        <path
-          fillRule="evenodd"
-          d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-          clipRule="evenodd"
-        />
-      </svg>
-    );
-  }
-  // asset_viewed (default)
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      className="h-4 w-4 text-yellow-400"
-    >
-      <path
-        fillRule="evenodd"
-        d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
 }
 
 function actionLabel(action: string, assetTitle: string | null): string {
   switch (action) {
-    case "room_viewed":
-      return "Viewed room";
-    case "asset_viewed":
-      return `Viewed ${assetTitle ?? "asset"}`;
-    case "asset_downloaded":
-      return `Downloaded ${assetTitle ?? "asset"}`;
-    case "link_clicked":
-      return `Clicked ${assetTitle ?? "asset"}`;
-    default:
-      return action;
+    case "room_viewed": return "Viewed room";
+    case "asset_viewed": return `Viewed ${assetTitle ?? "asset"}`;
+    case "asset_downloaded": return `Downloaded ${assetTitle ?? "asset"}`;
+    case "link_clicked": return `Clicked ${assetTitle ?? "link"}`;
+    default: return action;
   }
 }
+
+function actionIcon(action: string) {
+  if (action === "room_viewed") return { icon: "👁", cls: "bg-blue-50 text-blue-500" };
+  if (action === "asset_downloaded") return { icon: "⬇", cls: "bg-green-50 text-green-600" };
+  if (action === "link_clicked") return { icon: "↗", cls: "bg-purple-50 text-purple-500" };
+  return { icon: "📄", cls: "bg-slate-100 text-slate-500" };
+}
+
+const chevron = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-slate-300">
+    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+  </svg>
+);
 
 export default async function AnalyticsPage({ params }: PageProps) {
   const user = await getCurrentUser();
@@ -121,148 +59,112 @@ export default async function AnalyticsPage({ params }: PageProps) {
     select: { id: true, name: true },
   });
 
-  if (!room) {
-    notFound();
-  }
+  if (!room) notFound();
 
   const analytics = await getRoomAnalytics(room.id);
 
+  const metrics = [
+    { label: "Total Views", value: analytics.totalViews, highlight: true },
+    { label: "Unique Visitors", value: analytics.uniqueVisitors, highlight: false },
+    { label: "Downloads", value: analytics.downloads, highlight: false },
+    { label: "Link Clicks", value: analytics.linkClicks, highlight: false },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-950 px-6 py-8">
-      <div className="mx-auto max-w-4xl">
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/dashboard" className="hover:text-gray-300 transition">
-            Dashboard
-          </Link>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-4 w-4"
-          >
-            <path
-              fillRule="evenodd"
-              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <Link
-            href={`/rooms/${id}`}
-            className="hover:text-gray-300 transition truncate max-w-xs"
-          >
-            {room.name}
-          </Link>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-4 w-4"
-          >
-            <path
-              fillRule="evenodd"
-              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span className="text-gray-300">Analytics</span>
-        </nav>
+    <div className="px-6 py-8 mx-auto max-w-4xl">
+      {/* Breadcrumb */}
+      <nav className="mb-6 flex items-center gap-1.5 text-sm text-slate-400">
+        <Link href="/dashboard" className="hover:text-slate-600 transition">Dashboard</Link>
+        {chevron}
+        <Link href={`/rooms/${id}`} className="hover:text-slate-600 transition truncate max-w-[200px]">{room.name}</Link>
+        {chevron}
+        <span className="text-slate-500">Analytics</span>
+      </nav>
 
-        {/* Page Header */}
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Analytics</h1>
-            <p className="mt-1 text-sm text-gray-400">{room.name}</p>
-          </div>
-          <Link
-            href={`/rooms/${id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium text-gray-300 transition hover:border-gray-600 hover:text-white"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4"
-            >
-              <path
-                fillRule="evenodd"
-                d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Room builder
-          </Link>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Total views
-            </p>
-            <p className="mt-2 text-3xl font-bold text-white">
-              {analytics.totalViews.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Unique visitors
-            </p>
-            <p className="mt-2 text-3xl font-bold text-white">
-              {analytics.uniqueVisitors.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Downloads
-            </p>
-            <p className="mt-2 text-3xl font-bold text-white">
-              {analytics.downloads.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-              Last activity
-            </p>
-            <p className="mt-2 text-sm font-semibold text-white leading-snug">
-              {formatDate(analytics.lastActivity)}
-            </p>
-          </div>
-        </div>
-
-        {/* Recent Events Feed */}
+      <div className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-            Recent activity
-          </h2>
-          {analytics.recentEvents.length === 0 ? (
-            <div className="rounded-xl bg-gray-900 border border-gray-800 px-6 py-12 text-center">
-              <p className="text-gray-500">No activity yet.</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Share the room link with your customer to start tracking.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl bg-gray-900 border border-gray-800 divide-y divide-gray-800">
-              {analytics.recentEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center gap-3 px-5 py-3.5"
-                >
-                  <div className="shrink-0">
-                    <ActionIcon action={event.action} />
+          <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+          <p className="mt-1 text-sm text-slate-500">{room.name}</p>
+        </div>
+        <Link
+          href={`/rooms/${id}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
+        >
+          ← Room builder
+        </Link>
+      </div>
+
+      {/* Metric cards */}
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {metrics.map((m) => (
+          <div
+            key={m.label}
+            className={`rounded-xl border p-4 ${m.highlight ? "bg-red-50 border-red-200" : "bg-white border-slate-200 shadow-sm"}`}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{m.label}</p>
+            <p className={`mt-2 text-3xl font-bold ${m.highlight ? "text-red-600" : "text-slate-900"}`}>
+              {m.value.toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Last activity */}
+      <p className="mb-6 text-xs text-slate-400">
+        Last activity: <span className="font-medium text-slate-600">{formatDate(analytics.lastActivity)}</span>
+      </p>
+
+      {/* Views by section */}
+      {Object.keys(analytics.sectionViews).length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Views by Section</p>
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+            {(() => {
+              const max = Math.max(...Object.values(analytics.sectionViews));
+              return Object.entries(analytics.sectionViews)
+                .sort(([, a], [, b]) => b - a)
+                .map(([title, count]) => (
+                  <div key={title}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-slate-700 truncate flex-1 mr-3">{title}</p>
+                      <p className="text-sm font-bold text-slate-900 shrink-0">{count}</p>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full bg-red-500 transition-all" style={{ width: `${Math.round((count / max) * 100)}%` }} />
+                    </div>
                   </div>
-                  <p className="flex-1 text-sm text-gray-200">
+                ));
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Event feed */}
+      <div>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Recent Activity</p>
+        {analytics.recentEvents.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+            <p className="text-slate-500 font-medium">No activity yet.</p>
+            <p className="mt-1 text-sm text-slate-400">Share the room link with your customer to start tracking.</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100 overflow-hidden">
+            {analytics.recentEvents.map((event) => {
+              const { icon, cls } = actionIcon(event.action);
+              return (
+                <div key={event.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 ${cls}`}>
+                    {icon}
+                  </div>
+                  <p className="flex-1 text-sm text-slate-700">
                     {actionLabel(event.action, event.asset?.title ?? null)}
                   </p>
-                  <p className="shrink-0 text-xs text-gray-500">
-                    {relativeTime(new Date(event.timestamp))}
-                  </p>
+                  <p className="shrink-0 text-xs text-slate-400">{relativeTime(new Date(event.timestamp))}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

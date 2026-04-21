@@ -27,7 +27,7 @@ async function main() {
   const seller1 = await prisma.seller.create({
     data: {
       id: seller1Id,
-      email: "alex.morgan@twilio.com",
+      email: "seller@acmecorp.com",
       name: "Alex Morgan",
       passwordHash: passwordHash1,
     },
@@ -36,7 +36,7 @@ async function main() {
   const seller2 = await prisma.seller.create({
     data: {
       id: seller2Id,
-      email: "sam.chen@twilio.com",
+      email: "seller2@acmecorp.com",
       name: "Sam Chen",
       passwordHash: passwordHash2,
     },
@@ -44,18 +44,24 @@ async function main() {
 
   console.log(`Created sellers: ${seller1.email}, ${seller2.email}`);
 
-  // ─── Room 1 (Seller 1): Enterprise Contact Center Pitch — Acme Healthcare ──
+  // ─── Room 1 (Seller 1): Q3 Business Review — Acme Corp ──
   const room1Id = createId();
   const room1 = await prisma.room.create({
     data: {
       id: room1Id,
       sellerId: seller1Id,
-      name: "Enterprise Contact Center Pitch",
-      customerName: "Acme Healthcare",
+      name: "Q3 Business Review",
+      customerName: "Acme Corp",
       description:
-        "Custom Twilio Flex evaluation package for Acme Healthcare's contact center modernization initiative.",
-      slug: "acme-healthcare-flex-pitch",
+        "Custom Twilio Flex evaluation package for Acme Corp's contact center modernization initiative.",
+      slug: "acme-corp-room",
       status: "published",
+      branding: JSON.stringify({
+        sellerLogoUrl: "https://placehold.co/200x60/ef4444/ffffff?text=TWILIO&font=montserrat",
+        customerLogoUrl: "https://placehold.co/200x60/e2e8f0/475569?text=ACME+CORP&font=montserrat",
+        primaryColor: "#ef4444",
+        companyName: "Twilio",
+      }),
     },
   });
 
@@ -144,7 +150,7 @@ async function main() {
             id: createId(),
             type: "richtext",
             sourceType: "manual",
-            title: "Acme Healthcare Success Metrics",
+            title: "Acme Corp Success Metrics",
             description: "Proposed KPIs and baseline targets tailored to Acme's current contact center performance.",
             metadata: JSON.stringify({
               content:
@@ -196,18 +202,24 @@ async function main() {
 
   console.log(`Created Room 1: ${room1.name} (${room1.status})`);
 
-  // ─── Room 2 (Seller 1): SMB Messaging Bundle — StartupCo ────────────────────
+  // ─── Room 2 (Seller 1): Partnership Proposal — Acme Corp ────────────────────
   const room2Id = createId();
   const room2 = await prisma.room.create({
     data: {
       id: room2Id,
       sellerId: seller1Id,
-      name: "SMB Messaging Bundle",
-      customerName: "StartupCo",
+      name: "Partnership Proposal",
+      customerName: "Acme Corp",
       description:
-        "Twilio Messaging and Verify package proposal for StartupCo's user onboarding and transactional notification workflows.",
-      slug: "startupco-messaging-bundle",
+        "Twilio Messaging and Verify package proposal for Acme Corp's user onboarding and transactional notification workflows.",
+      slug: "acme-corp-draft",
       status: "draft",
+      branding: JSON.stringify({
+        sellerLogoUrl: "https://placehold.co/200x60/ef4444/ffffff?text=TWILIO&font=montserrat",
+        customerLogoUrl: "https://placehold.co/200x60/e2e8f0/475569?text=ACME+CORP&font=montserrat",
+        primaryColor: "#ef4444",
+        companyName: "Twilio",
+      }),
     },
   });
 
@@ -264,7 +276,7 @@ async function main() {
             description: "How Twilio Verify reduces account takeover fraud during user registration.",
             metadata: JSON.stringify({
               content:
-                "<h2>Twilio Verify for StartupCo</h2><p>Stop fraudulent signups before they happen with multi-channel OTP:</p><ul><li>SMS, Voice, Email, WhatsApp, and TOTP in one API</li><li>Built-in carrier intelligence to block SIM-swap fraud</li><li>Silent Network Auth for frictionless mobile verification</li><li>Pay per successful verification — no monthly minimums</li></ul>",
+                "<h2>Twilio Verify for Acme Corp</h2><p>Stop fraudulent signups before they happen with multi-channel OTP:</p><ul><li>SMS, Voice, Email, WhatsApp, and TOTP in one API</li><li>Built-in carrier intelligence to block SIM-swap fraud</li><li>Silent Network Auth for frictionless mobile verification</li><li>Pay per successful verification — no monthly minimums</li></ul>",
             }),
             order: 0,
           },
@@ -285,18 +297,24 @@ async function main() {
 
   console.log(`Created Room 2: ${room2.name} (${room2.status})`);
 
-  // ─── Room 3 (Seller 2): Video SDK Evaluation — MediaCorp ────────────────────
+  // ─── Room 3 (Seller 2): Technical Evaluation — Acme Corp ────────────────────
   const room3Id = createId();
   const room3 = await prisma.room.create({
     data: {
       id: room3Id,
       sellerId: seller2Id,
-      name: "Video SDK Evaluation",
-      customerName: "MediaCorp",
+      name: "Technical Evaluation",
+      customerName: "Acme Corp",
       description:
-        "Twilio Video SDK evaluation package for MediaCorp's live streaming and virtual event platform.",
-      slug: "mediacorp-video-sdk-evaluation",
+        "Twilio Video SDK evaluation package for Acme Corp's live streaming and virtual event platform.",
+      slug: "acme-corp-eval",
       status: "draft",
+      branding: JSON.stringify({
+        sellerLogoUrl: "https://placehold.co/200x60/ef4444/ffffff?text=TWILIO&font=montserrat",
+        customerLogoUrl: "https://placehold.co/200x60/e2e8f0/475569?text=ACME+CORP&font=montserrat",
+        primaryColor: "#ef4444",
+        companyName: "Twilio",
+      }),
     },
   });
 
@@ -334,11 +352,11 @@ async function main() {
             id: createId(),
             type: "richtext",
             sourceType: "manual",
-            title: "MediaCorp Use Case Fit",
-            description: "Analysis of how Twilio Video maps to MediaCorp's live event and broadcast requirements.",
+            title: "Acme Corp Use Case Fit",
+            description: "Analysis of how Twilio Video maps to Acme Corp's live event and broadcast requirements.",
             metadata: JSON.stringify({
               content:
-                "<h2>Twilio Video for MediaCorp</h2><h3>Use Cases Supported</h3><ul><li><strong>Virtual Events:</strong> Group Rooms support up to 50 participants with dominant speaker detection</li><li><strong>Broadcast:</strong> WebRTC-to-RTMP for streaming to YouTube, Twitch, and custom CDNs</li><li><strong>Recording:</strong> Composited and per-track cloud recording with webhook notifications</li></ul><h3>Scale Considerations</h3><p>For events exceeding 50 participants, Twilio's Live API provides low-latency HLS at scale with sub-5s latency.</p>",
+                "<h2>Twilio Video for Acme Corp</h2><h3>Use Cases Supported</h3><ul><li><strong>Virtual Events:</strong> Group Rooms support up to 50 participants with dominant speaker detection</li><li><strong>Broadcast:</strong> WebRTC-to-RTMP for streaming to YouTube, Twitch, and custom CDNs</li><li><strong>Recording:</strong> Composited and per-track cloud recording with webhook notifications</li></ul><h3>Scale Considerations</h3><p>For events exceeding 50 participants, Twilio's Live API provides low-latency HLS at scale with sub-5s latency.</p>",
             }),
             order: 2,
           },
@@ -403,10 +421,10 @@ async function main() {
       id: communityRoomId,
       roomId: room1Id,
       sellerId: seller1Id,
-      title: "Enterprise Contact Center Pitch Template",
+      title: "Q3 Business Review Template",
       description:
         "Battle-tested room template for enterprise Flex pitches. Includes executive overview, ROI calculator, and technical deep dive sections. Customize for your prospect and go.",
-      tags: JSON.stringify(["flex", "contact-center", "enterprise", "healthcare"]),
+      tags: JSON.stringify(["template", "business-review", "enterprise"]),
       cloneCount: 7,
       viewCount: 42,
     },

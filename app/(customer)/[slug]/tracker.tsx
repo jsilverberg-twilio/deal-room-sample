@@ -21,7 +21,7 @@ export function RoomTracker({ roomId }: TrackerProps) {
 interface AssetTrackerButtonProps {
   roomId: string;
   assetId: string;
-  action: "asset_viewed" | "link_clicked";
+  action: "asset_viewed" | "asset_downloaded" | "link_clicked";
   href?: string;
   className?: string;
   style?: React.CSSProperties;

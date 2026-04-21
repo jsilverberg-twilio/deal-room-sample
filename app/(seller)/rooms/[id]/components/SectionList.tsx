@@ -3,40 +3,7 @@
 import { useState } from "react";
 import { useRoom } from "../context";
 import { AssetPicker } from "./AssetPicker";
-
-function getThumbClass(type: string, metadata: string): string {
-  if (type === "link") return "from-blue-500 to-blue-700";
-  if (type === "richtext") return "from-purple-500 to-purple-700";
-  let parsed: { fileName?: string } = {};
-  try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-  const ext = parsed.fileName?.split(".").pop()?.toUpperCase() ?? "";
-  if (ext === "PDF") return "from-red-500 to-red-700";
-  if (["PPTX", "PPT"].includes(ext)) return "from-orange-500 to-orange-700";
-  return "from-slate-400 to-slate-600";
-}
-
-function getThumbLabel(type: string, metadata: string): string {
-  if (type === "link") return "↗";
-  if (type === "richtext") return "NOTE";
-  let parsed: { fileName?: string } = {};
-  try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-  return parsed.fileName?.split(".").pop()?.toUpperCase()?.slice(0, 4) ?? "FILE";
-}
-
-function getMetaText(type: string, metadata: string): string {
-  if (type === "link") {
-    let parsed: { url?: string } = {};
-    try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-    try { return new URL(parsed.url ?? "").hostname; } catch { return ""; }
-  }
-  let parsed: { fileSize?: number; fileName?: string } = {};
-  try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
-  if (parsed.fileSize) {
-    const mb = parsed.fileSize / (1024 * 1024);
-    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(parsed.fileSize / 1024)} KB`;
-  }
-  return "";
-}
+import { getThumbGrad, getThumbLabel, getMetaText } from "@/lib/assets";
 
 export function SectionList() {
   const { sections, setSections, reloadSections, roomId } = useRoom();
@@ -45,6 +12,22 @@ export function SectionList() {
   const [pickerSection, setPickerSection] = useState<string | null>(null);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [deletingAsset, setDeletingAsset] = useState<string | null>(null);
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+
+  async function renameSection(sectionId: string) {
+    const trimmed = editingTitle.trim();
+    setEditingSection(null);
+    if (!trimmed) return;
+    const prev = sections.find((s) => s.id === sectionId)?.title;
+    if (trimmed === prev) return;
+    setSections((s) => s.map((sec) => sec.id === sectionId ? { ...sec, title: trimmed } : sec));
+    await fetch(`/api/rooms/${roomId}/sections/${sectionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: trimmed }),
+    });
+  }
 
   async function addSection(e: React.FormEvent) {
     e.preventDefault();
@@ -142,9 +125,28 @@ export function SectionList() {
               </button>
             </div>
 
-            <span className="flex-1 text-xs font-bold text-slate-700 truncate">
-              {section.title}
-            </span>
+            {editingSection === section.id ? (
+              <input
+                autoFocus
+                type="text"
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onBlur={() => renameSection(section.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); renameSection(section.id); }
+                  if (e.key === "Escape") setEditingSection(null);
+                }}
+                className="flex-1 bg-white border border-red-300 rounded px-1.5 py-0.5 text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-red-400"
+              />
+            ) : (
+              <button
+                onClick={() => { setEditingSection(section.id); setEditingTitle(section.title); }}
+                className="flex-1 text-left text-xs font-bold text-slate-700 truncate hover:text-slate-900 transition"
+                title="Click to rename"
+              >
+                {section.title}
+              </button>
+            )}
             <span className="text-[10px] text-slate-400 font-medium shrink-0">{section.assets.length}</span>
 
             <button
@@ -165,7 +167,7 @@ export function SectionList() {
               <p className="text-[11px] text-slate-400 italic py-1">No assets yet</p>
             )}
             {section.assets.map((asset) => {
-              const thumbGrad = getThumbClass(asset.type, asset.metadata);
+              const thumbGrad = getThumbGrad(asset.type, asset.metadata);
               const thumbLabel = getThumbLabel(asset.type, asset.metadata);
               const meta = getMetaText(asset.type, asset.metadata);
               return (
