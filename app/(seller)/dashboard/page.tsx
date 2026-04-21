@@ -197,7 +197,7 @@ export default async function DashboardPage() {
                       href={shareUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-center text-xs font-medium text-green-700 transition hover:bg-green-100"
+                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-center text-xs font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:text-slate-700"
                     >
                       View live
                     </a>
