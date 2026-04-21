@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
 import { getRoomAnalytics } from "@/lib/events";
+import { LiveEventsFeed } from "./live-events-feed";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -16,33 +17,6 @@ function formatDate(date: Date | null): string {
   }).format(date);
 }
 
-function relativeTime(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const m = Math.floor(diff / 60000);
-  const h = Math.floor(m / 60);
-  const d = Math.floor(h / 24);
-  if (d > 0) return `${d}d ago`;
-  if (h > 0) return `${h}h ago`;
-  if (m > 0) return `${m}m ago`;
-  return "just now";
-}
-
-function actionLabel(action: string, assetTitle: string | null): string {
-  switch (action) {
-    case "room_viewed": return "Viewed room";
-    case "asset_viewed": return `Viewed ${assetTitle ?? "asset"}`;
-    case "asset_downloaded": return `Downloaded ${assetTitle ?? "asset"}`;
-    case "link_clicked": return `Clicked ${assetTitle ?? "link"}`;
-    default: return action;
-  }
-}
-
-function actionIcon(action: string) {
-  if (action === "room_viewed") return { icon: "👁", cls: "bg-blue-50 text-blue-500" };
-  if (action === "asset_downloaded") return { icon: "⬇", cls: "bg-green-50 text-green-600" };
-  if (action === "link_clicked") return { icon: "↗", cls: "bg-purple-50 text-purple-500" };
-  return { icon: "📄", cls: "bg-slate-100 text-slate-500" };
-}
 
 const chevron = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-slate-300">
@@ -139,33 +113,8 @@ export default async function AnalyticsPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Event feed */}
-      <div>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Recent Activity</p>
-        {analytics.recentEvents.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-            <p className="text-slate-500 font-medium">No activity yet.</p>
-            <p className="mt-1 text-sm text-slate-400">Share the room link with your customer to start tracking.</p>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100 overflow-hidden">
-            {analytics.recentEvents.map((event) => {
-              const { icon, cls } = actionIcon(event.action);
-              return (
-                <div key={event.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 ${cls}`}>
-                    {icon}
-                  </div>
-                  <p className="flex-1 text-sm text-slate-700">
-                    {actionLabel(event.action, event.asset?.title ?? null)}
-                  </p>
-                  <p className="shrink-0 text-xs text-slate-400">{relativeTime(new Date(event.timestamp))}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {/* Live event feed */}
+      <LiveEventsFeed roomId={room.id} />
     </div>
   );
 }
