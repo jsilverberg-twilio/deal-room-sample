@@ -48,3 +48,6 @@ public/uploads/*
 
 # brainstorming scratchpad
 .superpowers/
+
+# internal working docs (specs, plans)
+docs/superpowers/
