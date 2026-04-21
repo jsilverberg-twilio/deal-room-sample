@@ -6,6 +6,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string; sectionId: string; assetId: string }> }
 ) {
+  // Demo auth: getCurrentUser() returns the first seller in the DB.
+  // Room ownership check below is the real access gate.
   const user = await getCurrentUser();
   const { id, sectionId, assetId } = await params;
   const room = await prisma.room.findFirst({ where: { id, sellerId: user.id } });

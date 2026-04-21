@@ -54,14 +54,14 @@ function getThumbnail(type: string, metadata: string): { gradient: string; label
 }
 
 function getBadgeColor(type: string, metadata: string): string {
-  if (type === "link") return "bg-blue-500";
-  if (type === "richtext") return "bg-purple-500";
+  if (type === "link") return "bg-blue-100 text-blue-700 border border-blue-200";
+  if (type === "richtext") return "bg-purple-100 text-purple-700 border border-purple-200";
   let parsed: { fileName?: string } = {};
   try { parsed = JSON.parse(metadata ?? "{}"); } catch {}
   const ext = parsed.fileName?.split(".").pop()?.toUpperCase() ?? "";
-  if (ext === "PDF") return "bg-red-500";
-  if (["PPTX", "PPT"].includes(ext)) return "bg-orange-500";
-  return "bg-slate-500";
+  if (ext === "PDF") return "bg-red-100 text-red-700 border border-red-200";
+  if (["PPTX", "PPT"].includes(ext)) return "bg-orange-100 text-orange-700 border border-orange-200";
+  return "bg-slate-100 text-slate-600 border border-slate-200";
 }
 
 function getBadgeLabel(type: string, metadata: string): string {
@@ -203,7 +203,7 @@ export function PortalContent({
                   {/* Body */}
                   <div className="p-4 flex-1 flex flex-col">
                     <span
-                      className={`self-start text-[9px] font-black text-white px-2 py-0.5 rounded mb-2 tracking-wide ${badgeColor}`}
+                      className={`self-start text-[9px] font-black px-2 py-0.5 rounded mb-2 tracking-wide ${badgeColor}`}
                     >
                       {badgeLabel}
                     </span>
@@ -235,10 +235,7 @@ export function PortalContent({
           {/* Seller contact strip */}
           <div className="rounded-2xl border border-slate-200 shadow-sm bg-white p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-full flex items-center justify-center text-base font-black text-white shrink-0"
-                style={{ backgroundColor: brandColor }}
-              >
+              <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center text-base font-black text-white shrink-0">
                 {sellerInitials}
               </div>
               <div>
@@ -268,7 +265,7 @@ export function PortalContent({
 
       {/* Footer */}
       <div className="border-t border-slate-100 py-5 text-center text-xs text-slate-400 mt-10">
-        Powered by <span className="text-red-500 font-semibold">Twilio Deal Room</span> · This room was prepared exclusively for {customerName}
+        Powered by Twilio Deal Room · This room was prepared exclusively for {customerName}
       </div>
     </div>
   );
