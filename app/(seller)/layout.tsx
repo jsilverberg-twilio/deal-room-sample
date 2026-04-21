@@ -17,41 +17,31 @@ export default async function SellerLayout({
     : "S";
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
-      {/* Top nav */}
-      <header className="border-b border-gray-800 bg-gray-900 px-6 flex items-center justify-between h-14 shrink-0">
-        <div className="flex items-center gap-8">
-          <Link
-            href="/dashboard"
-            className="text-sm font-semibold text-white tracking-tight"
-          >
-            Digital Asset Rooms
-          </Link>
-          <nav className="flex items-center gap-1">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="sticky top-0 z-50 h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between shrink-0">
+        {/* Left */}
+        <div className="flex items-center">
+          <div className="flex items-center gap-2 pr-5 border-r border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-red-500 flex items-center justify-center text-white text-sm font-black">
+              D
+            </div>
+            <span className="text-sm font-bold text-slate-900">Deal Room</span>
+          </div>
+          <nav className="pl-5">
             <Link
               href="/dashboard"
-              className="rounded-md px-3 py-1.5 text-sm text-gray-400 transition hover:bg-gray-800 hover:text-white"
+              className="text-sm text-slate-500 hover:text-slate-900 transition-colors"
             >
               Dashboard
-            </Link>
-            <Link
-              href="/community"
-              className="rounded-md px-3 py-1.5 text-sm text-gray-400 transition hover:bg-gray-800 hover:text-white"
-            >
-              Community
             </Link>
           </nav>
         </div>
 
+        {/* Right */}
         <div className="flex items-center gap-3">
-          {/* User avatar */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white select-none">
+          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-xs font-bold text-white select-none">
             {initials}
           </div>
-          <span className="text-sm text-gray-300 hidden sm:block">
-            {user?.name}
-          </span>
-
         </div>
       </header>
 
